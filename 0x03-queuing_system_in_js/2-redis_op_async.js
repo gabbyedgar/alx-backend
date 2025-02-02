@@ -1,28 +1,34 @@
-#!/usr/bin/yarn dev
-import { promisify } from 'util';
-import { createClient, print } from 'redis';
+import { createClient, print } from "redis";
+import { promisify } from "util";
 
 const client = createClient();
 
-client.on('error', (err) => {
-  console.log('Redis client not connected to the server:', err.toString());
-});
+client
+  .on("connect", () => {
+    console.log("Redis client connected to the server");
+  })
+  .on("error", (error) => {
+    console.log(`Redis client not connected to the server: ${error}`);
+  });
 
-const setNewSchool = (schoolName, value) => {
-  client.SET(schoolName, value, print);
-};
-
-const displaySchoolValue = async (schoolName) => {
-  console.log(await promisify(client.GET).bind(client)(schoolName));
-};
-
-async function main() {
-  await displaySchoolValue('Holberton');
-  setNewSchool('HolbertonSanFrancisco', '100');
-  await displaySchoolValue('HolbertonSanFrancisco');
+function setNewSchool(schoolName, value) {
+  client.set(schoolName, value, print);
 }
 
-client.on('connect', async () => {
-  console.log('Redis client connected to the server');
-  await main();
-});
+
+
+const get = promisify(client.get).bind(client);
+
+async function displaySchoolValue(schoolName) {
+    const res = await client.get(schoolName).catch((error) => {
+      if (error) {
+        console.log(error);
+        throw error;
+      }
+    });
+    console.log(res);
+  }
+
+displaySchoolValue("Holberton");
+setNewSchool("HolbertonSanFrancisco", "100");
+displaySchoolValue("HolbertonSanFrancisco");
